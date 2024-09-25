@@ -17,7 +17,7 @@ def hash_image(image):
     img_flattened = image.flatten()  
     return hashlib.md5(img_flattened).hexdigest()  
 
-def compute_gist(img):
+def create_densenet_model(img):
     """提取图像的GIST特征"""
     
     # 定义滤波器的参数
