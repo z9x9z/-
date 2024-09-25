@@ -1,4 +1,5 @@
 import os
+from warnings import filters
 import numpy as np
 import cv2
 import hashlib
@@ -16,21 +17,30 @@ def hash_image(image):
     img_flattened = image.flatten()  
     return hashlib.md5(img_flattened).hexdigest()  
 
-def extract_gist_features(img):
+def compute_gist(img):
     """提取图像的GIST特征"""
     
-
-    img_resized = resize(img, (256, 256))
-    img_float = img_resized.astype(np.float32) / 255.0  
-
-    # Compute Gaussian filtered images
-    filters = [gaussian_filter(img_float, sigma) for sigma in [1, 2, 4, 8]]
-    
-    # Compute GIST features
+    # 定义滤波器的参数
+    orientations = 8  # 方向数
+    scales = [1, 2, 4, 8]  # 尺度
     gist_features = []
-    for filtered_img in filters:
-        gist = feature.hog(filtered_img, pixels_per_cell=(16, 16), cells_per_block=(2, 2), visualize=False)
-        gist_features.append(gist)
+
+    for scale in scales:
+        blurred = filters.gaussian(img, sigma=scale)
+        
+        # 计算梯度
+        gradient_x = np.gradient(blurred, axis=0)
+        gradient_y = np.gradient(blurred, axis=1)
+        
+        # 计算梯度的方向和幅度
+        magnitude = np.sqrt(gradient_x**2 + gradient_y**2)
+        direction = np.arctan2(gradient_y, gradient_x) + np.pi 
+        
+        # 生成方向直方图
+        hist, _ = np.histogram(direction, bins=orientations, range=(0, 2 * np.pi), weights=magnitude)
+        
+        # 归一化特征
+        gist_features.append(hist / np.sum(hist + 1e-6))
 
     return np.concatenate(gist_features)
 
